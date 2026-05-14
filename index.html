@@ -6,13 +6,15 @@
     <title>お見積りツール | Better Place</title>
     <style>
         :root {
-            --primary: #f59e0b; /* 暖かみのあるオレンジ */
+            --primary: #f59e0b;
             --primary-light: #fef3c7;
+            --primary-dark: #d97706;
             --text-main: #333333;
             --text-muted: #666666;
             --bg-body: #f9fafb;
             --bg-card: #ffffff;
             --border: #e5e7eb;
+            --danger: #ef4444;
             --radius: 12px;
         }
         body {
@@ -21,10 +23,10 @@
             color: var(--text-main);
             margin: 0;
             padding: 0;
-            padding-bottom: 120px; /* 下部バーのスペース */
+            padding-bottom: 160px;
         }
         .container {
-            max-width: 600px;
+            max-width: 720px;
             margin: 0 auto;
             padding: 20px;
         }
@@ -42,19 +44,21 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         .section-title {
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             font-weight: bold;
             margin-top: 0;
             margin-bottom: 16px;
             padding-bottom: 8px;
             border-bottom: 2px solid var(--primary-light);
         }
-        .form-group {
-            margin-bottom: 16px;
+        .list-heading {
+            font-size: 1.05rem;
+            font-weight: bold;
+            margin: 8px 4px 12px 4px;
+            color: var(--text-main);
         }
-        .form-group:last-child {
-            margin-bottom: 0;
-        }
+        .form-group { margin-bottom: 16px; }
+        .form-group:last-child { margin-bottom: 0; }
         label {
             display: block;
             font-size: 0.95rem;
@@ -67,7 +71,7 @@
             margin-bottom: 8px;
             display: block;
         }
-        select, input[type="number"] {
+        select, input[type="text"], input[type="number"], input[type="date"], textarea {
             width: 100%;
             padding: 12px;
             border: 1px solid var(--border);
@@ -75,11 +79,37 @@
             font-size: 1rem;
             box-sizing: border-box;
             background-color: #fafafa;
+            font-family: inherit;
+            color: var(--text-main);
         }
-        select:focus, input:focus {
+        textarea { min-height: 80px; resize: vertical; }
+        select:focus, input:focus, textarea:focus {
             outline: none;
             border-color: var(--primary);
             background-color: #fff;
+        }
+        input[type="date"] {
+            appearance: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+            min-height: 46px;
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            opacity: 0.7;
+            filter: invert(58%) sepia(74%) saturate(1832%) hue-rotate(360deg) brightness(98%) contrast(101%);
+        }
+        .name-input-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .name-input-row input { flex: 1; }
+        .name-input-row .suffix {
+            font-weight: bold;
+            font-size: 1.05rem;
+            color: var(--text-main);
+            flex-shrink: 0;
         }
         .input-row {
             display: flex;
@@ -90,52 +120,196 @@
             flex: 1;
             text-align: right;
         }
-        .input-row span {
-            font-weight: bold;
+        .input-row span { font-weight: bold; }
+        .form-row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
         }
-        /* Footer Bar */
+        .form-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        @media (max-width: 520px) {
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+            .form-row .form-group {
+                margin-bottom: 16px;
+            }
+        }
+
+        /* 明細トグル */
+        .detail-card {
+            background-color: var(--bg-card);
+            border-radius: var(--radius);
+            margin-bottom: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        .detail-header {
+            display: flex;
+            align-items: center;
+            padding: 14px 16px;
+            cursor: pointer;
+            user-select: none;
+            gap: 10px;
+        }
+        .detail-header:hover { background-color: #fafafa; }
+        .detail-title {
+            flex: 1;
+            font-weight: bold;
+            font-size: 0.95rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .detail-subtotal {
+            font-weight: bold;
+            color: var(--primary-dark);
+            font-size: 1rem;
+            white-space: nowrap;
+        }
+        .detail-toggle-arrow {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            transition: transform 0.2s;
+            margin-left: 2px;
+        }
+        .detail-card.open .detail-toggle-arrow {
+            transform: rotate(180deg);
+        }
+        .detail-delete-btn {
+            background: transparent;
+            border: none;
+            color: var(--danger);
+            font-size: 1.4rem;
+            cursor: pointer;
+            padding: 2px 6px;
+            line-height: 1;
+            border-radius: 4px;
+        }
+        .detail-delete-btn:hover { background: #fee2e2; }
+        .detail-body {
+            max-height: 0;
+            overflow: hidden;
+            padding: 0 20px;
+            border-top: 1px solid transparent;
+            transition: max-height 0.3s ease, padding 0.3s ease, border-color 0.3s ease;
+        }
+        .detail-card.open .detail-body {
+            max-height: 1400px;
+            padding: 4px 20px 20px 20px;
+            border-top-color: var(--border);
+        }
+        .detail-card {
+            transition: box-shadow 0.2s ease;
+        }
+        .detail-card.adding {
+            animation: cardAppear 0.3s ease;
+        }
+        @keyframes cardAppear {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .detail-type-badge {
+            display: inline-block;
+            font-size: 0.7rem;
+            padding: 3px 10px;
+            border-radius: 999px;
+            color: #fff;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        .detail-type-badge.regular { background-color: #6366f1; }
+        .detail-type-badge.spot { background-color: var(--primary); }
+
+        /* 追加ボタン */
+        .add-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 8px;
+        }
+        .add-btn {
+            flex: 1;
+            background-color: #fff;
+            color: var(--primary-dark);
+            border: 2px dashed var(--primary);
+            border-radius: 10px;
+            padding: 14px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .add-btn:active { background-color: var(--primary-light); }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 28px 16px;
+            font-size: 0.9rem;
+            background-color: var(--bg-card);
+            border-radius: var(--radius);
+            border: 1px dashed var(--border);
+        }
+
+        /* Bottom Bar */
         .bottom-bar {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
             background-color: #fff;
-            padding: 16px 20px;
             box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
             z-index: 100;
+            display: flex;
+            justify-content: center;
+        }
+        .bottom-bar-inner {
+            width: 100%;
+            max-width: 720px;
+            padding: 14px 20px;
+            box-sizing: border-box;
         }
         .total-price-area {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 10px;
         }
-        .total-label {
-            font-size: 1rem;
-            font-weight: bold;
-        }
+        .total-label { font-size: 1rem; font-weight: bold; }
         .total-price {
             font-size: 1.5rem;
             font-weight: bold;
-            color: #d97706;
+            color: var(--primary-dark);
         }
-        .copy-btn {
-            background-color: var(--primary);
-            color: white;
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .copy-btn, .print-btn {
+            flex: 1;
             border: none;
             padding: 12px;
             border-radius: 8px;
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: bold;
             cursor: pointer;
-            width: 100%;
         }
-        .copy-btn:active {
-            background-color: #d97706;
+        .copy-btn {
+            background-color: #fff;
+            color: var(--primary-dark);
+            border: 2px solid var(--primary);
         }
-        /* Toast notification */
+        .print-btn {
+            background-color: var(--primary);
+            color: white;
+        }
+        .copy-btn:active { background-color: var(--primary-light); }
+        .print-btn:active { background-color: var(--primary-dark); }
+
+        /* Toast */
         #toast {
             visibility: hidden;
             min-width: 200px;
@@ -147,7 +321,7 @@
             position: fixed;
             z-index: 1000;
             left: 50%;
-            bottom: 120px;
+            bottom: 170px;
             transform: translateX(-50%);
             font-size: 0.9rem;
             opacity: 0;
@@ -156,7 +330,120 @@
         #toast.show {
             visibility: visible;
             opacity: 1;
-            bottom: 130px;
+            bottom: 180px;
+        }
+
+        /* 印刷用見積書 */
+        .print-area { display: none; }
+
+        @media print {
+            body {
+                background: #fff;
+                padding: 0;
+                margin: 0;
+                font-size: 10pt;
+                color: #000;
+            }
+            .container, .bottom-bar, #toast { display: none !important; }
+            .print-area {
+                display: block !important;
+                padding: 16mm 14mm;
+                color: #000;
+            }
+            @page {
+                size: A4 portrait;
+                margin: 0;
+            }
+            .print-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                margin-bottom: 18px;
+            }
+            .print-title {
+                font-size: 22pt;
+                font-weight: bold;
+                letter-spacing: 0.25em;
+                margin: 0;
+            }
+            .print-meta {
+                text-align: right;
+                font-size: 9.5pt;
+                line-height: 1.6;
+            }
+            .print-customer {
+                font-size: 16pt;
+                font-weight: bold;
+                margin: 14px 0 8px 0;
+                padding-bottom: 4px;
+                border-bottom: 1px solid #000;
+            }
+            .print-greeting {
+                margin: 12px 0;
+                font-size: 10pt;
+            }
+            .print-issuer {
+                margin-top: 10px;
+                font-size: 9pt;
+                line-height: 1.7;
+                text-align: right;
+            }
+            .print-issuer .issuer-name {
+                font-size: 11pt;
+                font-weight: bold;
+                margin-bottom: 2px;
+            }
+            .print-total-box {
+                border: 2px solid #000;
+                padding: 10px 16px;
+                margin: 14px 0 18px 0;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                font-size: 14pt;
+                font-weight: bold;
+            }
+            .print-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 14px;
+                font-size: 9.5pt;
+            }
+            .print-table th, .print-table td {
+                border: 1px solid #000;
+                padding: 6px 8px;
+                vertical-align: top;
+            }
+            .print-table th {
+                background-color: #f3f4f6;
+                text-align: left;
+                font-weight: bold;
+            }
+            .print-table .num {
+                text-align: right;
+                white-space: nowrap;
+            }
+            .print-table tfoot td {
+                font-weight: bold;
+                background-color: #f3f4f6;
+            }
+            .print-remarks-title {
+                font-weight: bold;
+                margin-bottom: 6px;
+                font-size: 9.5pt;
+            }
+            .print-remarks {
+                font-size: 9pt;
+                white-space: pre-wrap;
+                padding: 10px;
+                border: 1px solid #000;
+                min-height: 40px;
+            }
+            .print-footer-note {
+                margin-top: 14px;
+                font-size: 8.5pt;
+                color: #333;
+            }
         }
     </style>
 </head>
@@ -165,155 +452,418 @@
 <div class="container">
     <h1>Better Place お助けサービス<br>お見積り</h1>
 
-    <!-- 1. 定期見守りプラン -->
+    <!-- お客様情報 -->
     <div class="section">
-        <h2 class="section-title">① 定期見守りプラン</h2>
-        <div class="form-group">
-            <select id="regularPlan" onchange="calculateTotal()">
-                <option value="0">利用しない</option>
-                <option value="14000">週1回（月4回） 14,000円</option>
-                <option value="27000">週2回（月8回） 27,000円</option>
-            </select>
-            <span class="description" style="margin-top:8px;">※定額プラン。移動費込み。</span>
-        </div>
-    </div>
-
-    <!-- 2. スポット利用 -->
-    <div class="section">
-        <h2 class="section-title">② スポット利用（基本料金）</h2>
-        <span class="description">通院や買い物など。1時間以上から承ります。</span>
-        <div class="form-group">
-            <select id="spotTime" onchange="calculateTotal()">
-                <option value="0">利用しない</option>
-                <option value="3500">1.0時間（3,500円）</option>
-                <option value="5250">1.5時間（5,250円）</option>
-                <option value="7000">2.0時間（7,000円）</option>
-                <option value="8750">2.5時間（8,750円）</option>
-                <option value="10500">3.0時間（10,500円）</option>
-                <option value="12250">3.5時間（12,250円）</option>
-                <option value="14000">4.0時間（14,000円）</option>
-            </select>
-        </div>
-    </div>
-
-    <!-- 3. 訪問・移動費 -->
-    <div class="section">
-        <h2 class="section-title">③ 訪問・移動費</h2>
-        <span class="description">事業所からご自宅、外出先の往復距離。</span>
-        <div class="form-group">
-            <select id="movingFee" onchange="calculateTotal()">
-                <option value="0">なし</option>
-                <option value="1100">往復 10km以内（1,100円）</option>
-                <option value="2200">往復 10km超～20km以内（2,200円）</option>
-                <option value="3300">往復 20km超～30km以内（3,300円）</option>
-                <option value="4400">往復 30km超（4,400円）</option>
-            </select>
-            <span class="description" style="margin-top:8px;">※30km超の長距離加算は下記「実費・その他」へ入力してください。</span>
-        </div>
-    </div>
-
-    <!-- 4. 実費・その他 -->
-    <div class="section">
-        <h2 class="section-title">④ 実費・その他加算</h2>
-        <div class="form-group">
-            <label>駐車場代</label>
-            <div class="input-row">
-                <input type="number" id="parkingFee" placeholder="0" oninput="calculateTotal()">
-                <span>円</span>
+        <h2 class="section-title">お客様情報</h2>
+        <div class="form-row">
+            <div class="form-group">
+                <label>お客様名</label>
+                <div class="name-input-row">
+                    <input type="text" id="customerName" placeholder="山田 太郎">
+                    <span class="suffix">様</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>発行日</label>
+                <input type="date" id="issuedDate">
             </div>
         </div>
         <div class="form-group">
-            <label>有料道路代</label>
-            <div class="input-row">
-                <input type="number" id="tollFee" placeholder="0" oninput="calculateTotal()">
-                <span>円</span>
-            </div>
-        </div>
-        <div class="form-group">
-            <label>その他（長距離加算・交通機関等）</label>
-            <div class="input-row">
-                <input type="number" id="otherFee" placeholder="0" oninput="calculateTotal()">
-                <span>円</span>
-            </div>
+            <label>備考</label>
+            <textarea id="remarks" placeholder="特記事項があればご記入ください"></textarea>
         </div>
     </div>
 
+    <!-- 明細リスト -->
+    <h2 class="list-heading">明細</h2>
+    <div id="detailsList"></div>
+
+    <!-- 追加ボタン -->
+    <div class="add-buttons">
+        <button class="add-btn" onclick="addDetail('regular')">＋ 定期</button>
+        <button class="add-btn" onclick="addDetail('spot')">＋ スポット</button>
+    </div>
 </div>
 
 <!-- Bottom Bar -->
 <div class="bottom-bar">
-    <div class="total-price-area">
-        <span class="total-label">お見積り合計（税込）</span>
-        <span class="total-price" id="totalPriceDisplay">¥0</span>
+    <div class="bottom-bar-inner">
+        <div class="total-price-area">
+            <span class="total-label">お見積り合計（税込）</span>
+            <span class="total-price" id="totalPriceDisplay">¥0</span>
+        </div>
+        <div class="action-buttons">
+            <button class="copy-btn" onclick="copyText()">📝 コピー</button>
+            <button class="print-btn" onclick="printQuote()">📄 見積書を作成</button>
+        </div>
     </div>
-    <button class="copy-btn" onclick="copyToClipboard()">📝 見積もり内容をコピーする</button>
 </div>
 
 <div id="toast">コピーしました！</div>
 
-<script>
-    function calculateTotal() {
-        const regularPlan = parseInt(document.getElementById('regularPlan').value) || 0;
-        const spotTime = parseInt(document.getElementById('spotTime').value) || 0;
-        const movingFee = parseInt(document.getElementById('movingFee').value) || 0;
-        
-        const parkingFee = parseInt(document.getElementById('parkingFee').value) || 0;
-        const tollFee = parseInt(document.getElementById('tollFee').value) || 0;
-        const otherFee = parseInt(document.getElementById('otherFee').value) || 0;
+<!-- 印刷用見積書 -->
+<div class="print-area" id="printArea"></div>
 
-        const total = regularPlan + spotTime + movingFee + parkingFee + tollFee + otherFee;
-        
-        document.getElementById('totalPriceDisplay').innerText = '¥' + total.toLocaleString();
-        
-        return {
-            regularPlan, spotTime, movingFee, parkingFee, tollFee, otherFee, total
-        };
+<script>
+    /* マスタ */
+    const REGULAR_OPTIONS = [
+        { value: 0, label: '利用しない', shortLabel: '' },
+        { value: 14000, label: '週1回（月4回） 14,000円', shortLabel: '週1回（月4回）' },
+        { value: 27000, label: '週2回（月8回） 27,000円', shortLabel: '週2回（月8回）' },
+    ];
+    const SPOT_TIME_OPTIONS = [
+        { value: 0, label: '選択してください', shortLabel: '' },
+        { value: 3500, label: '1.0時間（3,500円）', shortLabel: '1.0時間' },
+        { value: 5250, label: '1.5時間（5,250円）', shortLabel: '1.5時間' },
+        { value: 7000, label: '2.0時間（7,000円）', shortLabel: '2.0時間' },
+        { value: 8750, label: '2.5時間（8,750円）', shortLabel: '2.5時間' },
+        { value: 10500, label: '3.0時間（10,500円）', shortLabel: '3.0時間' },
+        { value: 12250, label: '3.5時間（12,250円）', shortLabel: '3.5時間' },
+        { value: 14000, label: '4.0時間（14,000円）', shortLabel: '4.0時間' },
+    ];
+    const MOVING_OPTIONS = [
+        { value: 0, label: 'なし', shortLabel: 'なし' },
+        { value: 1100, label: '往復 10km以内（1,100円）', shortLabel: '10km以内' },
+        { value: 2200, label: '往復 10km超〜20km以内（2,200円）', shortLabel: '10〜20km' },
+        { value: 3300, label: '往復 20km超〜30km以内（3,300円）', shortLabel: '20〜30km' },
+        { value: 4400, label: '往復 30km超（4,400円）', shortLabel: '30km超' },
+    ];
+
+    /* 差出人情報 */
+    const ISSUER = {
+        name: 'Better Place',
+        zip: '〒634-0835',
+        address: '奈良県橿原市東坊城町340-1',
+        tel: '0744-28-8806',
+        telLabel: '事務所',
+        telDirect: '080-3757-2942',
+        telDirectLabel: '直通',
+    };
+
+    /* 状態 */
+    let details = [];
+    let nextId = 1;
+    let openId = null;
+
+    /* ユーティリティ */
+    function fmtYen(n) { return '¥' + n.toLocaleString(); }
+    function fmtDate(d) {
+        return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+    }
+    function todayStr() {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+    function getIssuedDate() {
+        const v = document.getElementById('issuedDate').value;
+        if (!v) return new Date();
+        const parts = v.split('-');
+        return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    }
+    function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
     }
 
-    function copyToClipboard() {
-        const vals = calculateTotal();
-        
-        let text = "【Better Place お助けサービス お見積り】\n\n";
-        
-        if (vals.regularPlan > 0) {
-            const el = document.getElementById('regularPlan');
-            text += `① 定期見守り: ${el.options[el.selectedIndex].text}\n`;
+    function newDetail(type) {
+        const d = { id: nextId++, type, parking: 0, toll: 0, other: 0 };
+        if (type === 'regular') d.plan = 0;
+        else { d.time = 0; d.moving = 0; }
+        return d;
+    }
+    function getDetail(id) { return details.find(d => d.id === id); }
+    function subtotalOf(d) {
+        const base = d.type === 'regular' ? d.plan : (d.time + d.moving);
+        return base + d.parking + d.toll + d.other;
+    }
+    function titleOf(d) {
+        if (d.type === 'regular') {
+            const opt = REGULAR_OPTIONS.find(o => o.value === d.plan);
+            return opt && opt.shortLabel ? `定期見守り ${opt.shortLabel}` : '定期見守り（未選択）';
+        } else {
+            const opt = SPOT_TIME_OPTIONS.find(o => o.value === d.time);
+            return opt && opt.shortLabel ? `スポット ${opt.shortLabel}` : 'スポット（未選択）';
         }
-        if (vals.spotTime > 0) {
-            const el = document.getElementById('spotTime');
-            text += `② スポット利用: ${el.options[el.selectedIndex].text}\n`;
-        }
-        if (vals.movingFee > 0) {
-            const el = document.getElementById('movingFee');
-            text += `③ 訪問・移動費: ${el.options[el.selectedIndex].text}\n`;
-        }
-        
-        if (vals.parkingFee > 0 || vals.tollFee > 0 || vals.otherFee > 0) {
-            text += `④ 実費・その他:\n`;
-            if (vals.parkingFee > 0) text += `  - 駐車場代: ${vals.parkingFee.toLocaleString()}円\n`;
-            if (vals.tollFee > 0) text += `  - 有料道路代: ${vals.tollFee.toLocaleString()}円\n`;
-            if (vals.otherFee > 0) text += `  - その他: ${vals.otherFee.toLocaleString()}円\n`;
-        }
-        
-        text += `\n------------------------\n`;
-        text += `合計金額: ${vals.total.toLocaleString()}円（税込）\n`;
-        text += `------------------------\n`;
-        text += `※ご利用内容確定後に正式な金額をご提示いたします。\n`;
+    }
 
-        navigator.clipboard.writeText(text).then(() => {
-            showToast();
-        }).catch(err => {
-            alert('コピーに失敗しました。');
+    /* 操作 */
+    function addDetail(type) {
+        const d = newDetail(type);
+        details.push(d);
+        openId = d.id;
+        render({ animateId: d.id });
+        setTimeout(() => {
+            const el = document.querySelector(`.detail-card[data-id="${d.id}"]`);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 60);
+    }
+    function removeDetail(id) {
+        const d = getDetail(id);
+        if (!d) return;
+        if (!confirm(`「${titleOf(d)}」を削除しますか？`)) return;
+        details = details.filter(x => x.id !== id);
+        if (openId === id) openId = null;
+        render();
+    }
+    function toggleOpen(id) {
+        const prevOpen = openId;
+        openId = openId === id ? null : id;
+        // DOM操作だけでアニメーション。render()は呼ばない
+        if (prevOpen !== null) {
+            const prev = document.querySelector(`.detail-card[data-id="${prevOpen}"]`);
+            if (prev) prev.classList.remove('open');
+        }
+        if (openId !== null && openId !== prevOpen) {
+            const cur = document.querySelector(`.detail-card[data-id="${openId}"]`);
+            if (cur) cur.classList.add('open');
+        }
+    }
+    function updateField(id, field, value) {
+        const d = getDetail(id);
+        if (!d) return;
+        d[field] = parseInt(value) || 0;
+        // 全体renderせず、該当箇所だけ更新（input focus保持）
+        updateCardSummary(id);
+        updateTotal();
+    }
+    function updateCardSummary(id) {
+        const d = getDetail(id);
+        const card = document.querySelector(`.detail-card[data-id="${id}"]`);
+        if (!d || !card) return;
+        const titleEl = card.querySelector('.detail-title');
+        const subEl = card.querySelector('.detail-subtotal');
+        if (titleEl) titleEl.innerText = titleOf(d);
+        if (subEl) subEl.innerText = fmtYen(subtotalOf(d));
+    }
+    function updateTotal() {
+        const total = details.reduce((sum, d) => sum + subtotalOf(d), 0);
+        document.getElementById('totalPriceDisplay').innerText = fmtYen(total);
+    }
+
+    /* 描画 */
+    function render(opts) {
+        opts = opts || {};
+        const list = document.getElementById('detailsList');
+        if (details.length === 0) {
+            list.innerHTML = '<div class="empty-state">「＋ 定期」または「＋ スポット」で明細を追加してください</div>';
+        } else {
+            list.innerHTML = details.map(d => renderDetail(d, opts.animateId === d.id)).join('');
+        }
+        updateTotal();
+    }
+
+    function renderDetail(d, animate) {
+        const open = d.id === openId;
+        const sub = subtotalOf(d);
+        const title = titleOf(d);
+        const typeLabel = d.type === 'regular' ? '定期' : 'スポット';
+        return `
+        <div class="detail-card ${open ? 'open' : ''} ${animate ? 'adding' : ''}" data-id="${d.id}">
+            <div class="detail-header" onclick="toggleOpen(${d.id})">
+                <span class="detail-type-badge ${d.type}">${typeLabel}</span>
+                <span class="detail-title">${escapeHtml(title)}</span>
+                <span class="detail-subtotal">${fmtYen(sub)}</span>
+                <button class="detail-delete-btn" onclick="event.stopPropagation();removeDetail(${d.id})" title="削除">×</button>
+                <span class="detail-toggle-arrow">▼</span>
+            </div>
+            <div class="detail-body">
+                ${d.type === 'regular' ? renderRegularBody(d) : renderSpotBody(d)}
+            </div>
+        </div>
+        `;
+    }
+
+    function renderRegularBody(d) {
+        return `
+            <div class="form-group" style="padding-top:16px;">
+                <label>プラン</label>
+                <select onchange="updateField(${d.id},'plan',this.value)">
+                    ${REGULAR_OPTIONS.map(o => `<option value="${o.value}" ${o.value === d.plan ? 'selected' : ''}>${o.label}</option>`).join('')}
+                </select>
+                <span class="description" style="margin-top:8px;">※定額プラン。移動費込み。</span>
+            </div>
+            ${renderExpenseBody(d)}
+        `;
+    }
+    function renderSpotBody(d) {
+        return `
+            <div class="form-group" style="padding-top:16px;">
+                <label>基本料金</label>
+                <span class="description">通院や買い物など。1時間以上から承ります。</span>
+                <select onchange="updateField(${d.id},'time',this.value)">
+                    ${SPOT_TIME_OPTIONS.map(o => `<option value="${o.value}" ${o.value === d.time ? 'selected' : ''}>${o.label}</option>`).join('')}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>訪問・移動費</label>
+                <span class="description">事業所からご自宅、外出先の往復距離。</span>
+                <select onchange="updateField(${d.id},'moving',this.value)">
+                    ${MOVING_OPTIONS.map(o => `<option value="${o.value}" ${o.value === d.moving ? 'selected' : ''}>${o.label}</option>`).join('')}
+                </select>
+            </div>
+            ${renderExpenseBody(d)}
+        `;
+    }
+    function renderExpenseBody(d) {
+        return `
+            <div class="form-group">
+                <label>駐車場代</label>
+                <div class="input-row">
+                    <input type="number" value="${d.parking || ''}" placeholder="0" oninput="updateField(${d.id},'parking',this.value)">
+                    <span>円</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>有料道路代</label>
+                <div class="input-row">
+                    <input type="number" value="${d.toll || ''}" placeholder="0" oninput="updateField(${d.id},'toll',this.value)">
+                    <span>円</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>その他（長距離加算・交通機関等）</label>
+                <div class="input-row">
+                    <input type="number" value="${d.other || ''}" placeholder="0" oninput="updateField(${d.id},'other',this.value)">
+                    <span>円</span>
+                </div>
+            </div>
+        `;
+    }
+
+    /* コピー */
+    function copyText() {
+        if (details.length === 0) {
+            alert('明細を追加してください');
+            return;
+        }
+        const customer = document.getElementById('customerName').value.trim();
+        const remarks = document.getElementById('remarks').value.trim();
+        let text = '【Better Place お助けサービス お見積り】\n\n';
+        if (customer) text += `${customer} 様\n`;
+        text += `発行日：${fmtDate(getIssuedDate())}\n\n`;
+        details.forEach((d, i) => {
+            const title = titleOf(d);
+            const sub = subtotalOf(d);
+            text += `■ 明細${i + 1}：${title}\n`;
+            if (d.type === 'regular') {
+                const opt = REGULAR_OPTIONS.find(o => o.value === d.plan);
+                if (opt && d.plan > 0) text += `  ・プラン：${opt.label}\n`;
+            } else {
+                const tOpt = SPOT_TIME_OPTIONS.find(o => o.value === d.time);
+                const mOpt = MOVING_OPTIONS.find(o => o.value === d.moving);
+                if (tOpt && d.time > 0) text += `  ・基本料金：${tOpt.label}\n`;
+                if (mOpt && d.moving > 0) text += `  ・移動費：${mOpt.label}\n`;
+            }
+            if (d.parking > 0) text += `  ・駐車場代：${d.parking.toLocaleString()}円\n`;
+            if (d.toll > 0) text += `  ・有料道路代：${d.toll.toLocaleString()}円\n`;
+            if (d.other > 0) text += `  ・その他：${d.other.toLocaleString()}円\n`;
+            text += `  小計：${sub.toLocaleString()}円\n\n`;
         });
+        const total = details.reduce((sum, d) => sum + subtotalOf(d), 0);
+        text += '------------------------\n';
+        text += `合計金額：${total.toLocaleString()}円（税込）\n`;
+        text += '------------------------\n';
+        if (remarks) text += `\n備考：\n${remarks}\n`;
+        text += '\n※ご利用内容確定後に正式な金額をご提示いたします。\n';
+
+        navigator.clipboard.writeText(text).then(showToast).catch(() => alert('コピーに失敗しました。'));
     }
 
     function showToast() {
-        const toast = document.getElementById("toast");
-        toast.className = "show";
-        setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 2500);
+        const toast = document.getElementById('toast');
+        toast.className = 'show';
+        setTimeout(() => toast.className = toast.className.replace('show', ''), 2500);
     }
-    
-    calculateTotal();
+
+    /* PDF（印刷） */
+    function printQuote() {
+        if (details.length === 0) {
+            alert('明細を追加してください');
+            return;
+        }
+        buildPrintArea();
+        window.print();
+    }
+
+    function buildPrintArea() {
+        const customerRaw = document.getElementById('customerName').value.trim();
+        const customerDisplay = customerRaw ? `${escapeHtml(customerRaw)} 様` : '———';
+        const remarks = document.getElementById('remarks').value.trim();
+        const total = details.reduce((sum, d) => sum + subtotalOf(d), 0);
+
+        let rows = '';
+        details.forEach((d, i) => {
+            const title = titleOf(d);
+            const sub = subtotalOf(d);
+            let lines = '';
+            if (d.type === 'regular') {
+                const opt = REGULAR_OPTIONS.find(o => o.value === d.plan);
+                if (opt && d.plan > 0) lines += `${escapeHtml(opt.label)}<br>`;
+            } else {
+                const tOpt = SPOT_TIME_OPTIONS.find(o => o.value === d.time);
+                const mOpt = MOVING_OPTIONS.find(o => o.value === d.moving);
+                if (tOpt && d.time > 0) lines += `基本料金：${escapeHtml(tOpt.label)}<br>`;
+                if (mOpt && d.moving > 0) lines += `移動費：${escapeHtml(mOpt.label)}<br>`;
+            }
+            if (d.parking > 0) lines += `駐車場代：${d.parking.toLocaleString()}円<br>`;
+            if (d.toll > 0) lines += `有料道路代：${d.toll.toLocaleString()}円<br>`;
+            if (d.other > 0) lines += `その他：${d.other.toLocaleString()}円<br>`;
+            rows += `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td>${escapeHtml(title)}</td>
+                    <td>${lines || '—'}</td>
+                    <td class="num">${sub.toLocaleString()}円</td>
+                </tr>
+            `;
+        });
+
+        const html = `
+            <div class="print-header">
+                <h1 class="print-title">御 見 積 書</h1>
+                <div class="print-meta">
+                    発行日：${fmtDate(getIssuedDate())}
+                </div>
+            </div>
+            <div class="print-customer">${customerDisplay}</div>
+            <div class="print-greeting">下記の通りお見積もりいたします。</div>
+            <div class="print-issuer">
+                <div class="issuer-name">${escapeHtml(ISSUER.name)}</div>
+                ${escapeHtml(ISSUER.zip)} ${escapeHtml(ISSUER.address)}<br>
+                TEL：${escapeHtml(ISSUER.tel)}（${escapeHtml(ISSUER.telLabel)}）／${escapeHtml(ISSUER.telDirect)}（${escapeHtml(ISSUER.telDirectLabel)}）
+            </div>
+            <div class="print-total-box">
+                <span>御見積金額（税込）</span>
+                <span>¥${total.toLocaleString()}</span>
+            </div>
+            <table class="print-table">
+                <thead>
+                    <tr>
+                        <th style="width:6%;">No.</th>
+                        <th style="width:24%;">区分</th>
+                        <th>内訳</th>
+                        <th style="width:18%;" class="num">小計</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rows}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3" class="num">合計（税込）</td>
+                        <td class="num">¥${total.toLocaleString()}</td>
+                    </tr>
+                </tfoot>
+            </table>
+            <div class="print-remarks-title">備考</div>
+            <div class="print-remarks">${remarks ? escapeHtml(remarks) : ''}</div>
+            <div class="print-footer-note">※ご利用内容確定後に正式な金額をご提示いたします。</div>
+        `;
+        document.getElementById('printArea').innerHTML = html;
+    }
+
+    /* 初期化 */
+    document.getElementById('issuedDate').value = todayStr();
+    render();
 </script>
 
 </body>
